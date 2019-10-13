@@ -1,42 +1,69 @@
 <?php
-// index.php: The main file in the Guard project.
-//
-// Guard acts as a REST interface for database engines. It is built for MySQL and MariaDB, however
-// is built in a way which will make porting to other engines easy, provided a table-like model can
-// be emulated.
-//
-// (c) 2019 thatlittlegit. This code is licensed under the Apache License, 2.0. See the LICENSE file
-// of this project.
-$_SERVER["REQUEST_URI"] = str_replace("guard", "guard/index.php/databasegateway", $_SERVER["REQUEST_URI"]);
+/* index.php: The main file in the Guard project.
+ *
+ * Guard acts as a REST interface for database engines. It is built for MySQL and MariaDB, however
+ * is built in a way which will make porting to other engines easy, provided a table-like model can
+ * be emulated.
+ *
+ * (c) 2019 thatlittlegit. This code is licensed under the Apache License, 2.0. See the LICENSE file
+ * of this project.
+ */
 
+/** The database we tell PDO to connect to. Must allow having the database-name appended to the end
+ *  of the URI.
+ */
+$DATABASE_URI="mysql:host=localhost;dbname=";
+
+/** The current status on Production Mode. If enabled, Restler knows to keep its mouth shut about
+ *  error messages, etc.
+ */
+$PRODUCTION=true;
+
+/** The URI which is ahead of Guard. For example, if you have Guard as http://host/guard/..., then
+ *  set this to "/guard".
+ */
+$AHEAD_URI="/guard";
+
+/* Don't change past this point unless you know what you are doing. */
+/* Don't change past this point unless you know what you are doing. */
+/* Don't change past this point unless you know what you are doing. */
+
+// Trick Restler into using DatabaseGateway for everything
+$_SERVER["REQUEST_URI"] = $AHEAD_URI . "/index.php/databasegateway" . $_SERVER["REQUEST_URI"];
+
+// Load up dependencies
 require_once "vendor/autoload.php";
 use Luracast\Restler\Restler;
 use Luracast\Restler\RestException;
 use Luracast\Restler\Defaults;
 use Luracast\Restler\iCache;
 
+/** A fake cache that doesn't cache anything. */
 class FakeCache {
 	public function set($name, $data) { return true; } 	
 	public function get($name, $ignoreErrors = false) {}
 	public function clear($name, $ignoreErrors = false) { return true; }
 	public function isCached($name) { return false; }
 }
-
 Defaults::$cacheClass = 'FakeCache';
 Defaults::$cacheDirectory = '/tmp';
 
+/** Converts a Traversable — think PDOStatement — into an array. */
 function traversableToArray($traversable) {
 	$temp = [];
 	array_push($temp, ...$traversable);
 	return $temp;
 }
 
-// NOTE trims to twenty characters
+/** Converts a string to an alphanumeric version. <b>Trims the string to 512 characters.</b> 
+ *  Only use on columns or table names.
+ */
 function alphanumeric($text) {
-	return preg_replace("/[^a-zA-Z0-9_]+/", "", substr($text, 0, 20));
+	return preg_replace("/[^a-zA-Z0-9_]+/", "", substr($text, 0, 512));
 }
 
-function excludeQuotes($text) {
+/** Escapes quotes in a string. Use in values. */
+function escapeQuotes($text) {
 	return str_replace("'", "\'", $text);
 }
 
@@ -44,7 +71,7 @@ class DatabaseGateway {
 	protected $conn;
 
 	function __construct() {
-		$DATABASE_URI="mysql:host=localhost;dbname=";
+		global $DATABASE_URI;
 
 		if (!isset($_SERVER['PHP_AUTH_USER'])) {
 			header('WWW-Authenticate: Basic realm="login for your database"');
@@ -64,6 +91,11 @@ class DatabaseGateway {
 			}
 		}
 		$this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+	}
+	
+	/** @url GET */
+	function index() {
+		return "you've reached the guard. good job";
 	}
 
 	function tables() {
@@ -97,7 +129,7 @@ class DatabaseGateway {
 		unset($request_data["_table"]);
 
 		$colNames = "(`" . implode(array_map('alphanumeric', array_keys($request_data)), "`, `") . "`)";
-		$colValues = "('" . implode(array_map('excludeQuotes', $request_data), "','") . "')";
+		$colValues = "('" . implode(array_map('escapeQuotes', $request_data), "','") . "')";
 		$query = "INSERT INTO $cleanedtable $colNames VALUES $colValues";
 		$executed = $this->conn->query($query);
 		return array(
@@ -116,7 +148,7 @@ class DatabaseGateway {
 		$values = array_values($request_data);
 		function cb($key, $value) {
 			$cleanedKey = alphanumeric($key);
-			$cleanedValue = excludeQuotes($value);
+			$cleanedValue = escapeQuotes($value);
 			return "`$cleanedKey` = '$cleanedValue'";
 		}
 		$changes = implode(array_map('cb', $keys, $values), ', ');
@@ -166,7 +198,7 @@ class DatabaseGateway {
 	}
 }
 
-$r = new Restler(true);
+$r = new Restler($PRODUCTION);
 $r->addAPIClass('DatabaseGateway'); // repeat for more
 $r->handle(); //serve the response
 ?>
