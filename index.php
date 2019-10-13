@@ -20,7 +20,7 @@ $DATABASE_URI="mysql:host=localhost;dbname=";
 $PRODUCTION=true;
 
 /** The URI which is ahead of Guard. For example, if you have Guard as http://host/guard/..., then
- *  set this to "/guard".
+ *  set this to "/guard". Make sure it doesn't end with a slash.
  */
 $AHEAD_URI="/guard";
 
