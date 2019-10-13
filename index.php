@@ -79,7 +79,7 @@ class DatabaseGateway {
 		}
 
 		try {
-			$this->conn = new PDO($DATABASE_URI . $_GET['_database'], substr($_SERVER['PHP_AUTH_USER'], 0, 200), substr($_SERVER['PHP_AUTH_PW'], 0, 200));
+			$this->conn = new PDO($DATABASE_URI . $_GET['__database'], substr($_SERVER['PHP_AUTH_USER'], 0, 200), substr($_SERVER['PHP_AUTH_PW'], 0, 200));
 		} catch (Exception $error) {
 			if ($error->getCode() === 1045 /* Access denied */) {
 				header('WWW-Authenticate: Basic realm="login for your database"');
