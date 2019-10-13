@@ -1,0 +1,2 @@
+RewriteEngine on
+RewriteRule . index.php?__database=keeper-test [L,QSA,PT]

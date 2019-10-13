@@ -1,0 +1,15 @@
+{
+    "name": "duncan/guard",
+    "description": "Guard is a HTTP gateway for databases.",
+    "type": "project",
+    "require": {
+        "luracast/restler": "^3.0"
+    },
+    "license": "UNLICENSED",
+    "authors": [
+        {
+            "name": "thatlittlegit",
+            "email": "personal@thatlittlegit.tk"
+        }
+    ]
+}
