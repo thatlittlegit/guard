@@ -95,7 +95,7 @@ class DatabaseGateway {
 	
 	/** @url GET */
 	function index() {
-		return "you've reached the guard. good job";
+		return array('note' => "you've reached the guard. good job");
 	}
 
 	function tables() {
